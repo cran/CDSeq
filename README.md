@@ -1,0 +1,130 @@
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+# CDSeq
+
+<!-- badges: start -->
+
+[![Travis build
+status](https://travis-ci.com/kkang7/CDSeq_R_Package.svg?branch=master)](https://travis-ci.com/kkang7/CDSeq_R_Package)
+<!-- badges: end -->
+
+CDSeq is a complete deconvolution method for dissecting bulk RNA-Seq
+data. The input of CDSeq is, ideally, bulk RNA-Seq read counts (similar
+to the input format required by DESeq2), and CDSeq will estimate,
+simultaneously, the cell-type-specific gene expression profiles and the
+sample-specific cell-type proportions, no reference of pure cell line
+GEPs or scRNAseq reference is needed for running CDSeq.
+
+For example, if you have a bulk RNA-Seq data, a G by M matrix **A**,
+which is a G by M matrix. G denotes the number of genes and M is the
+sample size, then CDSeq will output **B** (a G by T matrix) and **C** (a
+T by M matrix), where T is the number of cell types, **B** is the
+estimate of cell-type-specific GEPs and **C** is the estimate of
+sample-specific cell-type proportions.
+
+Importantly, you can ask CDSeq to estimate the number of cell types,
+i.e. T, by providing a vector of possible integer values for T. For
+example, if the user input for T is a vector, i.e. \(T=\{2,3,4,5,6\}\),
+then CDSeq will estimate the most likely number for T.
+
+## Installation
+
+You can install the released version of CDSeq from
+[CRAN](https://CRAN.R-project.org) with:
+
+``` r
+install.packages("CDSeq")
+```
+
+And the development version from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("kkang7/CDSeq_R_Package")
+```
+
+build the vignette with
+
+``` r
+# install.packages("devtools")
+devtools::install_github("kkang7/CDSeq_R_Package", build_vignettes = TRUE)
+```
+
+## Known issue about MacOS installation
+
+It is possible for Mac users to run into some errors when install from
+source due to problems of Rcpp compiler tools. Follow the instruction
+here may help:
+<https://thecoatlessprofessor.com/programming/cpp/r-compiler-tools-for-rcpp-on-macos/>
+
+## Example
+
+Load package
+
+``` r
+library(CDSeq)
+```
+
+### When the number of cell types is a scalar
+
+``` r
+## basic example code
+result1<-CDSeq(bulk_data =  mixtureGEP, 
+               cell_type_number = 6, 
+               mcmc_iterations = 5, # increase the mcmc_iterations to 700 or above
+               gene_length = as.vector(gene_length), 
+               reference_gep = refGEP,  # gene expression profile of pure cell lines
+               cpu_number = 1)
+```
+
+### When the number of cell types is a vector
+
+The *cell\_type\_number* can also be a vector which contains different
+integer values. CDSeq will perform estimation for each integer in the
+vector and estimate the number of cell types in the mixtures. For
+example, one can set *cell\_type\_number = 2:10* as follows, and CDSeq
+will estimate the most likely number of cell types from 2 to 10.
+
+``` r
+result2<-CDSeq(bulk_data =  mixtureGEP, 
+              cell_type_number = 2:10, 
+              mcmc_iterations = 5, 
+              dilution_factor = 1, 
+              block_number = 1, 
+              gene_length = as.vector(gene_length), 
+              reference_gep = refGEP, # gene expression profile of pure cell lines
+              cpu_number = 1, # use multiple cores to save time. Set the cpu_number = length(cell_type_number) if there is enough cores.
+              print_progress_msg_to_file = 0)
+```
+
+### Use single cell to annotate CDSeq-estimated cell types
+
+``` r
+cdseq.result <- CDSeq::CDSeq(bulk_data = pbmc_mix,
+                             cell_type_number = seq(3,12,3),
+                             beta = 0.5,
+                             alpha = 5,
+                             mcmc_iterations = 700,
+                             cpu_number = 4,
+                             dilution_factor = 10)
+
+cdseq.result.celltypeassign <- cellTypeAssignSCRNA(cdseq_gep = cdseq.result$estGEP, # CDSeq-estimated cell-type-specific GEPs
+                                                   cdseq_prop = cdseq.result$estProp, # CDSeq-estimated cell type proportions
+                                                   sc_gep = sc_gep,         # PBMC single cell data
+                                                   sc_annotation = sc_annotation,# PBMC single data annotations
+                                                   sc_pt_size = 3,
+                                                   cdseq_pt_size = 6,
+                                                   seurat_nfeatures = 100,
+                                                   seurat_npcs = 50,
+                                                   seurat_dims=1:5,
+                                                   plot_umap = 1,
+                                                   plot_tsne = 0)
+```
+
+Check vignette for more details and examples:
+*browseVignettes(“CDSeq”)*.
+
+## Contact
+
+email: <kangkai0714@gmail.com>
